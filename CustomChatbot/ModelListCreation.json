@@ -1,0 +1,367 @@
+{
+  "name": "ModelListCreation",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -660,
+        120
+      ],
+      "id": "200d074c-6c10-40b9-8489-19ad91e38cfb",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -20,
+        220
+      ],
+      "id": "3bdf449a-15e3-49c9-8821-c7a6b98ce49f",
+      "name": "Wait",
+      "webhookId": "8f8ccd48-79a9-401e-b9d0-8412c6145b73"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        20
+      ],
+      "id": "54b7e703-d533-49fe-abb3-39b813cd21f4",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "chatId": "1715955554",
+        "text": "Check models on NocoDB",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        20
+      ],
+      "id": "cb2ae90b-f46d-433a-a0b7-5e2c97f160cb",
+      "name": "Telegram",
+      "webhookId": "ee5c79ef-ecc1-483f-a6f1-80df8967d4b5",
+      "credentials": {
+        "telegramApi": {
+          "id": "XsA3XsMwgoF9YT5p",
+          "name": "CustomLLM chat"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://openrouter.ai/api/v1/models",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1640,
+        100
+      ],
+      "id": "d8ccabd5-4253-460e-91d7-32723e96d957",
+      "name": "Get List"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "ids",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -1240,
+        100
+      ],
+      "id": "3fea268f-5fae-4b44-a913-1b6476ddbafc",
+      "name": "Split out"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "getAll",
+        "workspaceId": "wzvndt6m",
+        "projectId": "p9y5knkvzjsk8sp",
+        "table": "mepz33psictb4m0",
+        "returnAll": true,
+        "options": {
+          "fields": [
+            "LLM",
+            "Model"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -1240,
+        340
+      ],
+      "id": "d39624d3-63bd-4571-a2ac-4d8718d7afab",
+      "name": "Get Existing Recs",
+      "executeOnce": true,
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "fzHxsgiixB6AWxWg",
+          "name": "NocoDB DD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "ids",
+              "field2": "Model"
+            }
+          ]
+        },
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -960,
+        120
+      ],
+      "id": "00b95c3a-f59e-4780-97a1-96aa2992c442",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "authentication": "nocoDbApiToken",
+        "operation": "create",
+        "workspaceId": "wzvndt6m",
+        "projectId": "p9y5knkvzjsk8sp",
+        "table": "mepz33psictb4m0",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "LLM",
+              "fieldValue": "={{ $('Get LLM and Model').item.json.org }}"
+            },
+            {
+              "fieldName": "Model",
+              "fieldValue": "={{ $json.fullId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.nocoDb",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        220
+      ],
+      "id": "134970bb-e7eb-4c05-a293-7d9661856b86",
+      "name": "UpdateDB",
+      "credentials": {
+        "nocoDbApiToken": {
+          "id": "fzHxsgiixB6AWxWg",
+          "name": "NocoDB DD"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// == DEBUGGING: inspect the shape of your input ==\n// console.log(JSON.stringify(items[0].json, null, 2));\n\n// grab the array directly from json.data\nconst modelsArray = items[0].json.data || [];\n// map each entry to its id\nconst ids = modelsArray.map(m => m.id);\n// emit one item containing the full ids list\nreturn [{ json: { ids } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1440,
+        100
+      ],
+      "id": "4d82e262-5de0-472f-bde2-dc4c910560a3",
+      "name": "Get only Models"
+    },
+    {
+      "parameters": {
+        "jsCode": "// items is an array of single-item inputs, each with item.json.ids = \"org/model:tag\"\n// We’ll emit one output per input, with two fields: fullId and org\nreturn items.map(item => {\n  const fullId = item.json.ids;\n  // split on the first “/”\n  const [org] = fullId.split('/');\n  return {\n    json: {\n      fullId,\n      org,\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        220
+      ],
+      "id": "0fec404e-79b1-4a25-bf07-15e45cf2b904",
+      "name": "Get LLM and Model"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        100
+      ],
+      "id": "d2fdc9cf-c7bc-4b1b-9715-4acbad58e4d6",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get LLM and Model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get List": {
+      "main": [
+        [
+          {
+            "node": "Get only Models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split out": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Recs": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UpdateDB": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get only Models": {
+      "main": [
+        [
+          {
+            "node": "Split out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LLM and Model": {
+      "main": [
+        [
+          {
+            "node": "UpdateDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get List",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Existing Recs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8cbe024f-4983-4e60-95fc-635aac6a6457",
+  "meta": {
+    "instanceId": "3f9c83d1cb6a2d505a6ce0239037e5b775aee49d98c6b36ee2dad2fffe732a07"
+  },
+  "id": "LT8Drp5A1w7YYcGI",
+  "tags": []
+}
